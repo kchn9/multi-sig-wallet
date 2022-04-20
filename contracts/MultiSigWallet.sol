@@ -18,21 +18,25 @@ contract MultiSigWallet is SignedWallet {
         deposit();
     }
     
-    function withdraw(uint256 _amount) override external {
+    function withdraw(uint256 _amount) override external onlySigner {
         require(_amount <= getBalance(), "Wallet: Callers balance is insufficient");
         payable(msg.sender).transfer(_amount);
         emit FundsWithdraw(msg.sender, _amount);
     }
 
-    function withdrawAll() override external {
+    function withdrawAll() override external onlySigner {
         uint256 amount = getBalance();
         payable(msg.sender).transfer(amount);
         emit FundsWithdraw(msg.sender, amount);
+    }
+
+    function getBalance() override public view onlySigner returns(uint256) {
+        return _balances[msg.sender];
     }
 
     /// @notice Getter for contract balance
     function getContractBalance() public view returns(uint256) {
         return address(this).balance;
     }
-    
+
 }

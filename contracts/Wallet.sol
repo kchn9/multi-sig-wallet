@@ -24,8 +24,6 @@ contract Wallet {
     function withdrawAll() virtual external {}
 
     /// @notice Getter for user balance
-    function getBalance() public view returns(uint256) {
-        return _balances[msg.sender];
-    }
+    function getBalance() public view virtual returns(uint256) {}
 
 }
