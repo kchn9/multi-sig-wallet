@@ -14,11 +14,6 @@ contract MultiSigWallet is Signed, Ownable {
     
     /// @notice Keep track of users balances
     mapping (address => uint256) private _balances;
-
-    /// @notice Set contract creator as first owner
-    constructor() {
-        addSigner(msg.sender);
-    }
     
     /// @notice Deposit user funds 
     function deposit() public payable {
