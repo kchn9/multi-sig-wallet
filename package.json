@@ -28,8 +28,5 @@
   "homepage": "https://github.com/kchn9/multi-sig-wallet#readme",
   "devDependencies": {
     "@openzeppelin/test-helpers": "^0.5.15"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^4.5.0"
   }
 }
