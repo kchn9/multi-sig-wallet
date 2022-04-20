@@ -8,24 +8,25 @@ pragma solidity ^0.8.0;
 contract MultiSigWallet {
     
     /// @notice Keep track of users balances
-    uint256 private _balance;
+    mapping (address => uint256) private _balances;
 
-    /// @notice Wallet owner - allowed to perform any action with it
-    address public owner;
+    /// @notice Wallet owners - allowed to perform any action with it
+    mapping (address => bool) public owners;
     modifier onlyOwner {
-        require(msg.sender == owner, "Wallet: [onlyOwner]: caller is not the owner");
+        require(owners[msg.sender], "Wallet: [onlyOwner]: caller is not the owner");
         _;
     }
 
-    /// @notice Set contract creator as owner
+    /// @notice Set contract creator as first owner
     constructor() {
-        owner = msg.sender;
+        owners[msg.sender] = true;
     }
 
     /// @notice Deposit user funds 
     function deposit() public payable {
+        require(msg.sender != address(0), "Wallet: Caller can not be address 0");
         require(msg.value > 0, "Wallet: Value cannot be 0");
-        _balance += msg.value;
+        _balances[msg.sender] += msg.value;
     }
 
     /// @notice Fallback - any funds sent directly to contract will be deposited
@@ -38,7 +39,7 @@ contract MultiSigWallet {
         require(_amount <= getBalance(), "Wallet: Callers balance is insufficient");
         payable(owner).transfer(_amount);
     }
-    
+
     function withdrawAll() external onlyOwner {
         payable(owner).transfer(getBalance());
     }
