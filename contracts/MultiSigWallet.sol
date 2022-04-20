@@ -9,6 +9,7 @@ contract MultiSigWallet {
 
     event FundsDeposit(address who, uint256 amount);
     event FundsWithdraw(address who, uint256 amount);
+    event NewOwner(address who);
     
     /// @notice Keep track of users balances
     mapping (address => uint256) private _balances;
@@ -20,11 +21,33 @@ contract MultiSigWallet {
         _;
     }
 
+    /// Represents amount of signatures required to   transaction
+    uint256 requiredSignatures;
+
+    /// Keep an eye on owner amount
+    uint256 ownerAmount;
+
     /// @notice Set contract creator as first owner
     constructor() {
         owners[msg.sender] = true;
+        requiredSignatures = 1;
+        ownerAmount = 1;
     }
-
+    
+    /**
+     * @notice Adds new owner, emits event and increases requiredSignatures by 1 if ownerAmount allows
+     * @param _newOwner address of new wallet user
+     */
+    function addOwner(address _newOwner) external onlyOwner {
+        require(_newOwner != address(0), "Wallet: Address 0 cannot be owner");
+        ownerAmount++;
+        owners[_newOwner] = true;
+        emit NewOwner(_newOwner);
+        if (ownerAmount > requiredSignatures) {
+            requiredSignatures++;
+        }
+    }
+    
     /// @notice Deposit user funds 
     function deposit() public payable {
         require(msg.value > 0, "Wallet: Value cannot be 0");
