@@ -25,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/kchn9/multi-sig-wallet/issues"
   },
-  "homepage": "https://github.com/kchn9/multi-sig-wallet#readme"
+  "homepage": "https://github.com/kchn9/multi-sig-wallet#readme",
+  "devDependencies": {
+    "@openzeppelin/test-helpers": "^0.5.15"
+  }
 }
