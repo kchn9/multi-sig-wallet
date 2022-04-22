@@ -9,10 +9,10 @@ pragma solidity ^0.8.0;
  */
 contract RequestFactory {
 
-    event NewRequest(uint128 idx, uint64 requiredSignatures, RequestType requestType, bytes data);
+    event NewRequest(uint128 indexed idx, uint64 requiredSignatures, RequestType requestType, bytes data);
 
     /// @notice Requests are defined here
-    enum RequestType { ADD_SIGNER, REMOVE_SIGNER, INCREASE_REQ_SIGNATURES, DECREASE_REQ_SIGNATURES }
+    enum RequestType { ADD_SIGNER, REMOVE_SIGNER, INCREASE_REQ_SIGNATURES, DECREASE_REQ_SIGNATURES, SEND_TRANSACTION }
 
     /// @notice Request, apart from idx, request type and data stores info about required/current signatures and if it was executed before.
     struct Request {
@@ -49,8 +49,8 @@ contract RequestFactory {
      * @param _requiredSignatures amount of signatures required to execute request
      */
     function _createAddSignerRequest(
-        address _who, 
-        uint64 _requiredSignatures
+        uint64 _requiredSignatures,
+        address _who
     ) internal {
         Request memory addSignerRequest = Request(
             _requestIdx, 
@@ -71,8 +71,8 @@ contract RequestFactory {
      * @param _requiredSignatures amount of signatures required to execute request
      */
     function _createRemoveSignerRequest(
-        address _who,
-        uint64 _requiredSignatures
+        uint64 _requiredSignatures,
+        address _who
     ) internal {
         Request memory removeSignerRequest = Request(
             _requestIdx,
@@ -125,6 +125,25 @@ contract RequestFactory {
         _requests.push(decrementReqSignaturesRequest);
         _requestIdx++;
         emit NewRequest(_requestIdx, _requiredSignatures, RequestType.DECREASE_REQ_SIGNATURES, bytes(""));
+    }
+
+    function _createSendTransactionRequest(
+        uint64 _requiredSignatures,
+        uint256 _value,
+        address _to,
+        bytes memory _data
+    ) internal {
+        Request memory sendTransactionRequest = Request(
+            _requestIdx,
+            _requiredSignatures,
+            0,
+            RequestType.SEND_TRANSACTION,
+            abi.encodePacked(_to, _value, _data),
+            false
+        );
+        _requests.push(sendTransactionRequest);
+        _requestIdx++;
+        emit NewRequest(_requestIdx, _requiredSignatures, RequestType.SEND_TRANSACTION, abi.encodePacked(_to, _value, _data));
     }
 
     function _getRequest(
