@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 /** 
+ * Abstract contract implementing core features of wallet
  * @author kchn9
  */
 contract Wallet {
@@ -11,6 +12,12 @@ contract Wallet {
 
     /// @notice Keep track of users balances
     mapping (address => uint256) internal _balances;
+
+    /// @notice Checks if specified user has
+    modifier hasBalance(address _who) {
+        require(_balances[_who] > 0, "Wallet: Caller has no balance");
+        _;
+    }
     
     /// @notice Deposit user funds 
     function deposit() public virtual payable {}
