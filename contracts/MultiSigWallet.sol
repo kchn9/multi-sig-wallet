@@ -1,50 +1,67 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
+
+import { SignedWallet } from "./SignedWallet.sol";
+import { RequestFactory } from "./RequestFactory.sol";
 
 /** 
  * @author kchn9
  */
-contract MultiSigWallet {
-    
-    /// @notice Keep track of users balances
-    uint256 private _balance;
+contract MultiSigWallet is SignedWallet, RequestFactory {
 
-    /// @notice Wallet owner - allowed to perform any action with it
-    address public owner;
-    modifier onlyOwner {
-        require(msg.sender == owner, "Wallet: [onlyOwner]: caller is not the owner");
-        _;
+    function execute(uint128 _idx) external notExecuted(_idx) onlyFullySigned(_idx) {
+        (/*idx*/,
+        /*requiredSignatures*/,
+        /*currentSignatures*/,
+        RequestFactory.RequestType requestType, bytes memory data, /*isExecuted*/) = getRequest(_idx);
+        if (requestType == RequestFactory.RequestType.ADD_SIGNER) {
+            address newSignerAddress = abi.decode(data, (address));
+            _addSigner(newSignerAddress);
+            _requests[_idx].isExecuted = true;
+        }
     }
 
-    /// @notice Set contract creator as owner
-    constructor() {
-        owner = msg.sender;
+    function sign(uint128 _idx) external onlySigner notSignedBy(_idx) notExecuted(_idx) {
+        RequestFactory.Request storage requestToSign = _requests[_idx];
+        isRequestSignedBy[_idx][msg.sender] = true;
+        requestToSign.currentSignatures++;
     }
 
-    /// @notice Deposit user funds 
-    function deposit() public payable {
-        require(msg.value > 0, "Wallet: Value cannot be 0");
-        _balance += msg.value;
+    function addSigner(address _who) external onlySigner hasBalance(_who) {
+        _createAddSignerRequest(_who, uint64(_requiredSignatures));
     }
 
-    /// @notice Fallback - any funds sent directly to contract will be deposited
-    receive() external payable {
+    /// @notice Getter for contract balance
+    function getContractBalance() public view returns(uint256) {
+        return address(this).balance;
+    }
+
+    function deposit() public override payable {
+        require(msg.value > 0, "MultiSigWallet: Value cannot be 0");
+        _balances[msg.sender] += msg.value;
+        emit FundsDeposit(msg.sender, msg.value);
+    }
+
+    receive() external override payable {
         deposit();
     }
     
-    /// @notice Allow owner withdraw funds
-    function withdraw(uint256 _amount) external onlyOwner {
-        require(_amount <= getBalance(), "Wallet: Callers balance is insufficient");
-        payable(owner).transfer(_amount);
-    }
-    
-    function withdrawAll() external onlyOwner {
-        payable(owner).transfer(getBalance());
+    function withdraw(uint256 _amount) external override hasBalance(msg.sender) {
+        require(_amount <= getBalance(), "MultiSigWallet: Callers balance is insufficient");
+        _balances[msg.sender] -= _amount;
+        emit FundsWithdraw(msg.sender, _amount);
+        payable(msg.sender).transfer(_amount);
     }
 
-    function getBalance() public onlyOwner view returns(uint256) {
-        return _balance;
+    function withdrawAll() external override hasBalance(msg.sender) {
+        uint256 amount = getBalance();
+        _balances[msg.sender] = 0;
+        emit FundsWithdraw(msg.sender, amount);
+        payable(msg.sender).transfer(amount);
+    }
+
+    function getBalance() public override view returns(uint256) {
+        return _balances[msg.sender];
     }
 
 }
