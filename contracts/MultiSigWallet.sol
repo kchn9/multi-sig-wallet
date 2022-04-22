@@ -9,11 +9,13 @@ import { RequestFactory } from "./RequestFactory.sol";
  */
 contract MultiSigWallet is SignedWallet, RequestFactory {
 
-    function execute(uint128 _idx) external notExecuted(_idx) onlyFullySigned(_idx) {
+    function execute(uint128 _idx) external checkOutOfBounds(_idx) notExecuted(_idx) {
+        require(_requests[_idx].requiredSignatures <= _requests[_idx].currentSignatures, 
+            "MultiSigWallet: Called request is not fully signed yet.");
         (/*idx*/,
         /*requiredSignatures*/,
         /*currentSignatures*/,
-        RequestType requestType, bytes memory data, /*isExecuted*/) = getRequest(_idx);
+        RequestType requestType, bytes memory data, /*isExecuted*/) = _getRequest(_idx);
         if (requestType == RequestType.ADD_SIGNER || requestType == RequestType.REMOVE_SIGNER) {
             address who = abi.decode(data, (address));
             if (requestType == RequestType.ADD_SIGNER) {
@@ -30,7 +32,8 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         }
     }
 
-    function sign(uint128 _idx) external onlySigner notSignedBy(_idx) notExecuted(_idx) {
+    function sign(uint128 _idx) external checkOutOfBounds(_idx) notExecuted(_idx) onlySigner {
+        require(!isRequestSignedBy[_idx][msg.sender], "MultiSigWallet: Called request has been signed by sender already.");
         RequestFactory.Request storage requestToSign = _requests[_idx];
         isRequestSignedBy[_idx][msg.sender] = true;
         requestToSign.currentSignatures++;
@@ -42,6 +45,16 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
 
     function removeSigner(address _who) external onlySigner isSigner(_who) {
         _createRemoveSignerRequest(_who, uint64(_requiredSignatures)); 
+    }
+
+    function increaseRequiredSignatures() external onlySigner {
+        require(_requiredSignatures + 1 <= _signersCount, "MultiSigWallet: Required signatures cannot exceed signers count");
+        _createIncrementReqSignaturesRequest(uint64(_requiredSignatures));
+    }
+
+    function decreaseRequiredSignatures() external onlySigner {
+        require(_requiredSignatures - 1 > 0, "MultiSigWallet: Required signatures cannot be 0.");
+        _createDecrementReqSignaturesRequest(uint64(_requiredSignatures));
     }
 
     function deposit() public override payable {
@@ -73,8 +86,8 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
     }
 
     /// @notice Getter for contract balance
-    function getContractBalance() public view returns(uint256) {
+    function getContractBalance() hasBalance(msg.sender) public view returns(uint256) {
         return address(this).balance;
     }
-    
+
 }

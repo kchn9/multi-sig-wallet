@@ -12,7 +12,7 @@ contract RequestFactory {
     event NewRequest(uint128 idx, uint64 requiredSignatures, RequestType requestType, bytes data);
 
     /// @notice Requests are defined here
-    enum RequestType { ADD_SIGNER, REMOVE_SIGNER }
+    enum RequestType { ADD_SIGNER, REMOVE_SIGNER, INCREASE_REQ_SIGNATURES, DECREASE_REQ_SIGNATURES }
 
     /// @notice Request, apart from idx, request type and data stores info about required/current signatures and if it was executed before.
     struct Request {
@@ -28,8 +28,8 @@ contract RequestFactory {
     mapping(uint128 => mapping(address => bool)) isRequestSignedBy;
 
     /// @notice Keep track of next request id and store all requests
-    uint128 public _requestIdx;
-    Request[] public _requests;
+    uint128 internal _requestIdx;
+    Request[] internal _requests;
 
     /// @notice Check if called id is in _requests[id]
     modifier checkOutOfBounds(uint128 _idx) {
@@ -37,22 +37,9 @@ contract RequestFactory {
         _;
     }
 
-    /// @notice Allow call only if the signer has not signed the request in advance
-    modifier notSignedBy(uint128 _idx) {
-        require(!isRequestSignedBy[_idx][msg.sender], "RequestFactory: Called request has been signed by sender already.");
-        _;
-    }
-
     /// @notice Allow call only requests not executed before
     modifier notExecuted(uint128 _idx) {
         require(!_requests[_idx].isExecuted, "RequestFactory: Called request has been executed already.");
-        _;
-    }
-
-    /// @notice Allows calling request execution only if enough signatures are collected.
-    modifier onlyFullySigned(uint128 _idx) {
-        Request storage r = _requests[_idx];
-        require(r.requiredSignatures <= r.currentSignatures, "RequestFactory: Called request is not fully signed yet.");
         _;
     }
 
@@ -100,9 +87,49 @@ contract RequestFactory {
         emit NewRequest(_requestIdx, _requiredSignatures, RequestType.REMOVE_SIGNER, abi.encode(_who));
     }
 
-    function getRequest(
+    /**
+     * @notice Creates INCREASE_REQ_SIGNATURES request
+     * @param _requiredSignatures amount of signatures required to execute request
+     */
+    function _createIncrementReqSignaturesRequest(
+        uint64 _requiredSignatures
+    ) internal {
+        Request memory incrementReqSignaturesRequest = Request(
+            _requestIdx,
+            _requiredSignatures,
+            0,
+            RequestType.INCREASE_REQ_SIGNATURES,
+            bytes(""),
+            false
+        );
+        _requests.push(incrementReqSignaturesRequest);
+        _requestIdx++;
+        emit NewRequest(_requestIdx, _requiredSignatures, RequestType.INCREASE_REQ_SIGNATURES, bytes(""));
+    }
+
+    /**
+     * @notice Creates DECREASE_REQ_SIGNATURES request
+     * @param _requiredSignatures amount of signatures required to execute request
+     */
+    function _createDecrementReqSignaturesRequest(
+        uint64 _requiredSignatures
+    ) internal {
+        Request memory decrementReqSignaturesRequest = Request(
+            _requestIdx,
+            _requiredSignatures,
+            0,
+            RequestType.DECREASE_REQ_SIGNATURES,
+            bytes(""),
+            false
+        );
+        _requests.push(decrementReqSignaturesRequest);
+        _requestIdx++;
+        emit NewRequest(_requestIdx, _requiredSignatures, RequestType.DECREASE_REQ_SIGNATURES, bytes(""));
+    }
+
+    function _getRequest(
         uint128 _idx
-    ) public view returns (
+    ) internal view returns (
         uint128,
         uint64,
         uint64,

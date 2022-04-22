@@ -49,20 +49,30 @@ contract SignedWallet is Wallet {
         require(_who != address(0), "SignedWallet: New signer cannot be address 0.");
         _signers[_who] = true;
         _signersCount++;
-        if (_requiredSignatures + 1 <= _signersCount) {
-            _requiredSignatures++;
-        }
+        _increaseRequiredSignatures();
         emit NewSigner(_who);
     }
 
     /// @notice Removes role 'signer' from specified address
-    function _removeSigner(address _who) internal onlySigner isSigner(_who) {
+    function _removeSigner(address _who) internal {
         _signers[_who] = false;
         _signersCount--;
-        if (_requiredSignatures - 1 <= _signersCount) {
+        _decreaseRequiredSignatures();
+        emit DeleteSigner(_who);
+    }
+
+    function _increaseRequiredSignatures() internal {
+        if (_requiredSignatures + 1 <= _signersCount) {
+            _requiredSignatures++;
+        }
+    }
+
+    function _decreaseRequiredSignatures() internal {
+        if (_requiredSignatures - 1 < 1) {
+            _requiredSignatures = _requiredSignatures;
+        } else {
             _requiredSignatures--;
         }
-        emit DeleteSigner(_who);
     }
 
 }
