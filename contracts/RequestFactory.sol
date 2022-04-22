@@ -9,10 +9,10 @@ pragma solidity ^0.8.0;
  */
 contract RequestFactory {
 
-    event NewRequest(uint128 idx, uint64 requiredSignatures, bytes data);
+    event NewRequest(uint128 idx, uint64 requiredSignatures, RequestType requestType, bytes data);
 
     /// @notice Requests are defined here
-    enum RequestType { ADD_SIGNER, DELETE_SIGNER }
+    enum RequestType { ADD_SIGNER, REMOVE_SIGNER }
 
     /// @notice Request, apart from idx, request type and data stores info about required/current signatures and if it was executed before.
     struct Request {
@@ -75,7 +75,29 @@ contract RequestFactory {
         );
         _requests.push(addSignerRequest);
         _requestIdx++;
-        emit NewRequest(_requestIdx, _requiredSignatures, abi.encode(_who));
+        emit NewRequest(_requestIdx, _requiredSignatures, RequestType.ADD_SIGNER, abi.encode(_who));
+    }
+
+    /**
+     * @notice Creates REMOVE_SIGNER request
+     * @param _who address of signer to remove
+     * @param _requiredSignatures amount of signatures required to execute request
+     */
+    function _createRemoveSignerRequest(
+        address _who,
+        uint64 _requiredSignatures
+    ) internal {
+        Request memory removeSignerRequest = Request(
+            _requestIdx,
+            _requiredSignatures,
+            0,
+            RequestType.REMOVE_SIGNER,
+            abi.encode(_who),
+            false
+        );
+        _requests.push(removeSignerRequest);
+        _requestIdx++;
+        emit NewRequest(_requestIdx, _requiredSignatures, RequestType.REMOVE_SIGNER, abi.encode(_who));
     }
 
     function getRequest(

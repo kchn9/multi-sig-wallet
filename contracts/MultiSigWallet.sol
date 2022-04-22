@@ -13,11 +13,20 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         (/*idx*/,
         /*requiredSignatures*/,
         /*currentSignatures*/,
-        RequestFactory.RequestType requestType, bytes memory data, /*isExecuted*/) = getRequest(_idx);
-        if (requestType == RequestFactory.RequestType.ADD_SIGNER) {
-            address newSignerAddress = abi.decode(data, (address));
-            _addSigner(newSignerAddress);
+        RequestType requestType, bytes memory data, /*isExecuted*/) = getRequest(_idx);
+        if (requestType == RequestType.ADD_SIGNER || requestType == RequestType.REMOVE_SIGNER) {
+            address who = abi.decode(data, (address));
+            if (requestType == RequestType.ADD_SIGNER) {
+                _addSigner(who);
+            }
+            if (requestType == RequestType.REMOVE_SIGNER) {
+                _removeSigner(who);
+            }
             _requests[_idx].isExecuted = true;
+        }
+        // todo add more cases
+        else {
+            revert("MultiSigWallet: Specified request type does not exist.");
         }
     }
 
@@ -31,9 +40,8 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         _createAddSignerRequest(_who, uint64(_requiredSignatures));
     }
 
-    /// @notice Getter for contract balance
-    function getContractBalance() public view returns(uint256) {
-        return address(this).balance;
+    function removeSigner(address _who) external onlySigner isSigner(_who) {
+        _createRemoveSignerRequest(_who, uint64(_requiredSignatures)); 
     }
 
     function deposit() public override payable {
@@ -64,4 +72,9 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         return _balances[msg.sender];
     }
 
+    /// @notice Getter for contract balance
+    function getContractBalance() public view returns(uint256) {
+        return address(this).balance;
+    }
+    
 }
