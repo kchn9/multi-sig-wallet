@@ -20,12 +20,6 @@ contract SignedWallet is Wallet {
     /// @notice Keep track of users with signer role
     mapping(address => bool) internal _signers;
 
-    /// @notice Check if specified address is signer
-    modifier isSigner(address _who) {
-        require(!_signers[_who], "SignedWallet: Indicated address to delete is not signer.");
-        _;
-    }
-
     /// @notice Access modifier to prevent calls from 'not-signer' user
     modifier onlySigner {
         require(_signers[msg.sender], "SignedWallet: Caller is not signer");
