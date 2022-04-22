@@ -4,9 +4,10 @@ pragma solidity ^0.8.0;
 import "./Wallet.sol";
 
 /**
- * Implementation of mechanism which allow to set access role 'signer' for wallet user
+ * @notice Contract that adds potential 'signing' mechanism used for authenticating some calls in future contracts.
  * @author kchn9
  */
+
 contract SignedWallet is Wallet {
 
     /**
@@ -16,35 +17,33 @@ contract SignedWallet is Wallet {
     event NewSigner(address who);
     
     /// @notice Keep track of users with signer role
-    mapping(address => bool) public signers;
+    mapping(address => bool) private _signers;
 
-    /// @notice Wallet creator is first signer
-    constructor() {
-        _addSigner(msg.sender);
-    }
-
-    /// @notice Counts signers
-    uint256 public signersCount;
-    /// @notice Represents how much signatures are needed for action
-    uint128 public requiredSignatures;
-
+    /// @notice Access modifier to prevent calls from 'not-signer' user
     modifier onlySigner {
-        require(signers[msg.sender], "Signed: Caller is not signer");
+        require(_signers[msg.sender], "SignedWallet: Caller is not signer");
         _;
     }
 
-    function sign() public onlySigner {
-    } 
-
-    function execute() public {
+    /// @notice Wallet creator is first signer
+    constructor() {
+        _signers[msg.sender] = true;
+        _signersCount = 1;
+        _requiredSignatures = 1;
     }
 
-    /// @notice Adds new signer
+    /// @notice Counts signers
+    uint internal _signersCount;
+    /// @notice Represents how much signatures are needed for action
+    uint internal _requiredSignatures;
+
+    /// @notice Adds role 'signer' to wallet user if he has balance
     function _addSigner(address _who) internal {
-        signers[_who] = true;
-        signersCount++;
-        if (requiredSignatures + 1 <= signersCount) {
-            requiredSignatures++;
+        require(_who != address(0), "SignedWallet: New signer cannot be address 0.");
+        _signers[_who] = true;
+        _signersCount++;
+        if (_requiredSignatures + 1 <= _signersCount) {
+            _requiredSignatures++;
         }
         emit NewSigner(_who);
     }
