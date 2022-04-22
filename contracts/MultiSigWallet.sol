@@ -26,7 +26,15 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
             }
             _requests[_idx].isExecuted = true;
         }
-        // todo add more cases
+        else if (requestType == RequestType.INCREASE_REQ_SIGNATURES) {
+            _increaseRequiredSignatures();
+        }
+        else if (requestType == RequestType.DECREASE_REQ_SIGNATURES) {
+            _decreaseRequiredSignatures();
+        }
+        else if (requestType == RequestType.SEND_TRANSACTION){
+            //todo
+        }
         else {
             revert("MultiSigWallet: Specified request type does not exist.");
         }
@@ -40,11 +48,12 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
     }
 
     function addSigner(address _who) external onlySigner hasBalance(_who) {
-        _createAddSignerRequest(_who, uint64(_requiredSignatures));
+        _createAddSignerRequest(uint64(_requiredSignatures), _who);
     }
 
-    function removeSigner(address _who) external onlySigner isSigner(_who) {
-        _createRemoveSignerRequest(_who, uint64(_requiredSignatures)); 
+    function removeSigner(address _who) external onlySigner {
+        require(!_signers[_who], "MultiSigWallet: Indicated address to delete is not signer.");
+        _createRemoveSignerRequest(uint64(_requiredSignatures), _who); 
     }
 
     function increaseRequiredSignatures() external onlySigner {
