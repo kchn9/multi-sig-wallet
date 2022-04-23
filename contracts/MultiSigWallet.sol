@@ -9,7 +9,13 @@ import { RequestFactory } from "./RequestFactory.sol";
  */
 contract MultiSigWallet is SignedWallet, RequestFactory {
 
+<<<<<<< HEAD
     event RequestSigned(uint128 indexed id);
+=======
+    event RequestSigned(uint128 indexed id, address who);
+    event RequestSignatureRevoked(uint128 indexed id, address who);
+
+>>>>>>> 7472bae (Add revokeSignature function and missing events)
     event RequestExecuted(uint128 indexed id);
     event TransactionSent(address to, uint256 value, bytes txData);
 
@@ -62,7 +68,19 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         RequestFactory.Request storage requestToSign = _requests[_idx];
         isRequestSignedBy[_idx][msg.sender] = true;
         requestToSign.currentSignatures++;
+<<<<<<< HEAD
         emit RequestSigned(_idx);
+=======
+        emit RequestSigned(_idx, msg.sender);
+    }
+
+    function revokeSignature(uint128 _idx) external checkOutOfBounds(_idx) notExecuted(_idx) onlySigner {
+        require(isRequestSignedBy[_idx][msg.sender], "MultiSigWallet: Caller has not signed request yet.");
+        RequestFactory.Request storage requestToRevokeSignature = _requests[_idx];
+        isRequestSignedBy[_idx][msg.sender] = false;
+        requestToRevokeSignature.currentSignatures--;
+        emit RequestSignatureRevoked(_idx, msg.sender);
+>>>>>>> 7472bae (Add revokeSignature function and missing events)
     }
 
     function addSigner(address _who) external onlySigner hasBalance(_who) {
