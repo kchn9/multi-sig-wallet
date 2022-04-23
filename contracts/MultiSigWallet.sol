@@ -9,7 +9,10 @@ import { RequestFactory } from "./RequestFactory.sol";
  */
 contract MultiSigWallet is SignedWallet, RequestFactory {
 
-    event RequestExecuted(uint128 indexed _idx);
+    event RequestSigned(uint128 indexed id, address who);
+    event RequestSignatureRevoked(uint128 indexed id, address who);
+
+    event RequestExecuted(uint128 indexed id);
     event TransactionSent(address to, uint256 value, bytes txData);
 
     function execute(uint128 _idx) external checkOutOfBounds(_idx) notExecuted(_idx) {
@@ -61,6 +64,15 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         RequestFactory.Request storage requestToSign = _requests[_idx];
         isRequestSignedBy[_idx][msg.sender] = true;
         requestToSign.currentSignatures++;
+        emit RequestSigned(_idx, msg.sender);
+    }
+
+    function revokeSignature(uint128 _idx) external checkOutOfBounds(_idx) notExecuted(_idx) onlySigner {
+        require(isRequestSignedBy[_idx][msg.sender], "MultiSigWallet: Caller has not signed request yet.");
+        RequestFactory.Request storage requestToRevokeSignature = _requests[_idx];
+        isRequestSignedBy[_idx][msg.sender] = false;
+        requestToRevokeSignature.currentSignatures--;
+        emit RequestSignatureRevoked(_idx, msg.sender);
     }
 
     function addSigner(address _who) external onlySigner hasBalance(_who) {
@@ -68,7 +80,7 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
     }
 
     function removeSigner(address _who) external onlySigner {
-        require(!_signers[_who], "MultiSigWallet: Indicated address to delete is not signer.");
+        require(_signers[_who], "MultiSigWallet: Indicated address to delete is not signer.");
         _createRemoveSignerRequest(uint64(_requiredSignatures), _who); 
     }
 
@@ -82,7 +94,7 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         _createDecrementReqSignaturesRequest(uint64(_requiredSignatures));
     }
 
-    function sendTransaction(
+    function sendTx(
         address _to, 
         uint256 _value, 
         bytes memory _data
