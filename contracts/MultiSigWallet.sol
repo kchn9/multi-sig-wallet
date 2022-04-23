@@ -70,7 +70,7 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
     }
 
     function removeSigner(address _who) external onlySigner {
-        require(!_signers[_who], "MultiSigWallet: Indicated address to delete is not signer.");
+        require(_signers[_who], "MultiSigWallet: Indicated address to delete is not signer.");
         _createRemoveSignerRequest(uint64(_requiredSignatures), _who); 
     }
 
