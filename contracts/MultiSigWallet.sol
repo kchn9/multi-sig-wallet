@@ -72,13 +72,6 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         _createDecrementReqSignaturesRequest(uint64(_requiredSignatures));
     }
 
-    function internalTransfer(uint256 _value, address _to) external {
-        require(_value <= getBalance(), "MultiSigWallet: Callers balance is insufficient");
-        _balances[msg.sender] -= _value;
-        _balances[_to] += _value;
-        // todo emitEvent
-    }
-
     function sendTransaction(
         address _to, 
         uint256 _value, 
