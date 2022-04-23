@@ -220,6 +220,40 @@ contract("MultiSigWallet", async function(accounts) {
         )
     })
 
+    it("should create SEND_TRANSACTION request", async function() {
+        expectEvent(
+            await this.instance.sendTx(bob, 1_000_000_000_000_000, "0x", { from: alice }),
+            "NewRequest",
+            {
+                requestType: new BN(4)
+            }
+        )
+    })
+    
+    it("should send transaction", async function() {
+        const expectedValue = web3.utils.toWei("1");
+        // add 5 eth to contract balance
+        await this.instance.deposit({ from: bob, value: web3.utils.toWei("5") }); 
+        await this.instance.sendTx(bob, expectedValue, "0x", { from: alice });
+        await this.instance.sign(0, { from: alice });
+        expectEvent(
+            await this.instance.execute(0, { from: alice }),
+            "TransactionSent",
+            {
+                to: bob,
+                value: expectedValue
+            }
+        )
+    })
 
+    it("should reject unsigned request execution", async function() {
+        await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") }); // add signer requirement
+        await this.instance.addSigner(bob, { from: alice });
+
+        expectRevert(
+            this.instance.execute(0, { from: alice }),
+            "MultiSigWallet: Called request is not fully signed yet."
+        )
+    })
 
 })
