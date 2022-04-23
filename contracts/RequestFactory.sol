@@ -25,7 +25,7 @@ contract RequestFactory {
     }
 
     /// @notice Checks if address(signer) already signded Request of given id
-    mapping(uint128 => mapping(address => bool)) isRequestSignedBy;
+    mapping(uint128 => mapping(address => bool)) internal isRequestSignedBy;
 
     /// @notice Keep track of next request id and store all requests
     uint128 internal _requestIdx;
