@@ -67,9 +67,9 @@ contract SignedWallet is Wallet {
 
     function _decreaseRequiredSignatures() internal {
         if (_requiredSignatures - 1 < 1) {
-            emit RequiredSignaturesDecreased(_requiredSignatures, _requiredSignatures - 1);
             _requiredSignatures = _requiredSignatures;
         } else {
+            emit RequiredSignaturesDecreased(_requiredSignatures, _requiredSignatures - 1);
             _requiredSignatures--;
         }
     }
