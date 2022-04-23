@@ -35,7 +35,7 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
             _requests[_idx].isExecuted = true;
         }
         else if (requestType == RequestType.SEND_TRANSACTION){
-            (address payable to, uint256 value, bytes memory txData) = abi.decode(data, (address, uint256, bytes));
+            (address to, uint256 value, bytes memory txData) = abi.decode(data, (address, uint256, bytes));
             (bool success, /*data*/) = to.call{ value: value }(txData);
             if (success) {
                 _requests[_idx].isExecuted = true;
@@ -74,7 +74,7 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
     }
 
     function sendTransaction(
-        address payable _to, 
+        address _to, 
         uint256 _value, 
         bytes memory _data
     ) external onlySigner {
