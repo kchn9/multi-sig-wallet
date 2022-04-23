@@ -16,6 +16,11 @@ contract SignedWallet is Wallet {
      */
     event NewSigner(address who); 
     event DeleteSigner(address who);
+
+    /**
+     */
+    event RequiredSignaturesIncreased(uint oldVal, uint newVal);
+    event RequiredSignaturesDecreased(uint oldVal, uint newVal);
     
     /// @notice Keep track of users with signer role
     mapping(address => bool) internal _signers;
@@ -57,12 +62,14 @@ contract SignedWallet is Wallet {
 
     function _increaseRequiredSignatures() internal {
         if (_requiredSignatures + 1 <= _signersCount) {
+            emit RequiredSignaturesIncreased(_requiredSignatures, _requiredSignatures + 1);
             _requiredSignatures++;
         }
     }
 
     function _decreaseRequiredSignatures() internal {
         if (_requiredSignatures - 1 < 1) {
+            emit RequiredSignaturesDecreased(_requiredSignatures, _requiredSignatures - 1);
             _requiredSignatures = _requiredSignatures;
         } else {
             _requiredSignatures--;

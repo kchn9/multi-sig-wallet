@@ -9,6 +9,9 @@ import { RequestFactory } from "./RequestFactory.sol";
  */
 contract MultiSigWallet is SignedWallet, RequestFactory {
 
+    event RequestExecuted(uint128 indexed _idx);
+    event TransactionSent(address to, uint256 value, bytes txData);
+
     function execute(uint128 _idx) external checkOutOfBounds(_idx) notExecuted(_idx) {
                         // todo emitEvents
         require(_requests[_idx].requiredSignatures <= _requests[_idx].currentSignatures, 
@@ -16,7 +19,9 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         (/*idx*/,
         /*requiredSignatures*/,
         /*currentSignatures*/,
-        RequestType requestType, bytes memory data, /*isExecuted*/) = _getRequest(_idx);
+        RequestType requestType,
+        bytes memory data,
+        /*isExecuted*/) = _getRequest(_idx);
         if (requestType == RequestType.ADD_SIGNER || requestType == RequestType.REMOVE_SIGNER) {
             address who = abi.decode(data, (address));
             if (requestType == RequestType.ADD_SIGNER) {
@@ -25,20 +30,25 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
             if (requestType == RequestType.REMOVE_SIGNER) {
                 _removeSigner(who);
             }
+            emit RequestExecuted(_idx);
             _requests[_idx].isExecuted = true;
         }
         else if (requestType == RequestType.INCREASE_REQ_SIGNATURES) {
             _increaseRequiredSignatures();
+            emit RequestExecuted(_idx);
             _requests[_idx].isExecuted = true;
         }
         else if (requestType == RequestType.DECREASE_REQ_SIGNATURES) {
             _decreaseRequiredSignatures();
+            emit RequestExecuted(_idx);
             _requests[_idx].isExecuted = true;
         }
         else if (requestType == RequestType.SEND_TRANSACTION){
             (address to, uint256 value, bytes memory txData) = abi.decode(data, (address, uint256, bytes));
             (bool success, /*data*/) = to.call{ value: value }(txData);
             _requests[_idx].isExecuted = true;
+            emit TransactionSent(to, value, txData);
+            emit RequestExecuted(_idx);
             require(success, "MultiSigWallet: Ether transfer failed");
         }
         else {
