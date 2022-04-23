@@ -48,7 +48,6 @@ contract SignedWallet is Wallet {
         require(_who != address(0), "SignedWallet: New signer cannot be address 0.");
         _signers[_who] = true;
         _signersCount++;
-        _increaseRequiredSignatures();
         emit NewSigner(_who);
     }
 
@@ -56,7 +55,6 @@ contract SignedWallet is Wallet {
     function _removeSigner(address _who) internal {
         _signers[_who] = false;
         _signersCount--;
-        _decreaseRequiredSignatures();
         emit DeleteSigner(_who);
     }
 
