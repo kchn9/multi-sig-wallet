@@ -98,7 +98,8 @@ contract("MultiSigWallet", async function(accounts) {
             await this.instance.sign(expectedId, { from: alice }),
             "RequestSigned",
             {
-                id: new BN(expectedId)
+                id: new BN(expectedId),
+                who: alice
             }
         );
     })
@@ -278,7 +279,21 @@ contract("MultiSigWallet", async function(accounts) {
     })
 
     it("should revoke request transaction", async function() {
-        
+        await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") }); // add signer requirement
+        await this.instance.addSigner(bob, { from: alice });
+
+        const expectedId = 0;
+
+        await this.instance.sign(expectedId, { from: alice });
+
+        expectEvent(
+            await this.instance.revokeSignature(expectedId, { from: alice }),
+            "RequestSignatureRevoked",
+            {
+                id: new BN(expectedId),
+                who: alice
+            }
+        )
     })
 
     it("should reject INCREASE_REQ_SIGNATURES request creation to prevent exceeding requiredSignatures over signerCount", async function() {
