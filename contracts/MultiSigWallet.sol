@@ -84,7 +84,7 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         _createDecrementReqSignaturesRequest(uint64(_requiredSignatures));
     }
 
-    function sendTransaction(
+    function sendTx(
         address _to, 
         uint256 _value, 
         bytes memory _data
