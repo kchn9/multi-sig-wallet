@@ -61,8 +61,8 @@ contract RequestFactory {
             false
         );
         _requests.push(addSignerRequest);
-        _requestIdx++;
         emit NewRequest(_requestIdx, _requiredSignatures, RequestType.ADD_SIGNER, abi.encode(_who));
+        _requestIdx++;
     }
 
     /**
@@ -83,8 +83,8 @@ contract RequestFactory {
             false
         );
         _requests.push(removeSignerRequest);
-        _requestIdx++;
         emit NewRequest(_requestIdx, _requiredSignatures, RequestType.REMOVE_SIGNER, abi.encode(_who));
+        _requestIdx++;
     }
 
     /**
@@ -103,8 +103,8 @@ contract RequestFactory {
             false
         );
         _requests.push(incrementReqSignaturesRequest);
-        _requestIdx++;
         emit NewRequest(_requestIdx, _requiredSignatures, RequestType.INCREASE_REQ_SIGNATURES, bytes(""));
+        _requestIdx++;
     }
 
     /**
@@ -123,8 +123,8 @@ contract RequestFactory {
             false
         );
         _requests.push(decrementReqSignaturesRequest);
-        _requestIdx++;
         emit NewRequest(_requestIdx, _requiredSignatures, RequestType.DECREASE_REQ_SIGNATURES, bytes(""));
+        _requestIdx++;
     }
 
     function _createSendTransactionRequest(
@@ -142,8 +142,8 @@ contract RequestFactory {
             false
         );
         _requests.push(sendTransactionRequest);
-        _requestIdx++;
         emit NewRequest(_requestIdx, _requiredSignatures, RequestType.SEND_TRANSACTION, abi.encodePacked(_to, _value, _data));
+        _requestIdx++;
     }
 
     function _getRequest(
