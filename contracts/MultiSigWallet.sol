@@ -9,8 +9,8 @@ import { RequestFactory } from "./RequestFactory.sol";
  */
 contract MultiSigWallet is SignedWallet, RequestFactory {
 
-    event RequestSigned(uint128 indexed _idx);
-    event RequestExecuted(uint128 indexed _idx);
+    event RequestSigned(uint128 indexed id);
+    event RequestExecuted(uint128 indexed id);
     event TransactionSent(address to, uint256 value, bytes txData);
 
     function execute(uint128 _idx) external checkOutOfBounds(_idx) notExecuted(_idx) {
