@@ -9,6 +9,7 @@ import { RequestFactory } from "./RequestFactory.sol";
  */
 contract MultiSigWallet is SignedWallet, RequestFactory {
 
+    event RequestSigned(uint128 indexed _idx);
     event RequestExecuted(uint128 indexed _idx);
     event TransactionSent(address to, uint256 value, bytes txData);
 
@@ -61,6 +62,7 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         RequestFactory.Request storage requestToSign = _requests[_idx];
         isRequestSignedBy[_idx][msg.sender] = true;
         requestToSign.currentSignatures++;
+        emit RequestSigned(_idx);
     }
 
     function addSigner(address _who) external onlySigner hasBalance(_who) {
