@@ -12,7 +12,7 @@ contract("MultiSigWallet", async function(accounts) {
     const [alice, bob, ...rest] = accounts;
 
     beforeEach("should prepare new contract instance", async function() {
-        this.instance = await MultiSigWallet.new({ from: alice });
+        this.instance = await MultiSigWallet.new({ from: alice, nonce: await web3.eth.getTransactionCount(alice) });
     })
 
     it("should allow user to deposit 1 ether by [1] deposit()", async function() {
@@ -76,21 +76,6 @@ contract("MultiSigWallet", async function(accounts) {
         )
     })
 
-    it("should reject withdraw() for not owner account", async function() {
-        const amount = new BN(web3.utils.toWei("1"));
-        expectRevert(
-            this.instance.withdraw(amount, { from: bob }),
-            "MultiSigWallet: Callers balance is insufficient"
-        )
-    })
-
-    it("should reject withdrawAll() for not owner account", async function() {
-        expectRevert(
-            this.instance.withdrawAll({ from: bob }),
-            "Wallet: Specified address has no balance"
-        )
-    })
-
     it("should create ADD_SIGNER request", async function() {
         await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") }); // add signer requirement
 
@@ -150,52 +135,15 @@ contract("MultiSigWallet", async function(accounts) {
         )
     })
 
-    it("should create DECREASE_REQ_SIGNATURES request", async function() {
-        // add signer
-        await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") });
-        await this.instance.addSigner(bob, { from: alice });
-        await this.instance.sign(0, { from: alice });
-        await this.instance.execute(0, { from: alice });
-        // requiredSignatures = 2
-
-        expectEvent(
-            await this.instance.decreaseRequiredSignatures({ from: alice }),
-            "NewRequest",
-            {
-                requestType: new BN(3)
-            }
-        )
-    })
-
-    it("should reject DECREASE_REQ_SIGNATURES request creation to avoid requiredSignatures = 0", async function() {
-        expectRevert(
-            this.instance.decreaseRequiredSignatures({ from: alice }),
-            "MultiSigWallet: Required signatures cannot be 0."
-        )
-    })
-
     it("should create INCREASE_REQ_SIGNATURES request", async function() {
         // add two signers
         for (let id = 0; id < 2; id++) {
             await this.instance.deposit({ from: rest[id], value: web3.utils.toWei("1") });
             await this.instance.addSigner(rest[id], { from: alice });
             await this.instance.sign(id, { from: alice });
-            if (id === 1) {
-                await this.instance.sign(id, { from: rest[id - 1] });
-            }
             await this.instance.execute(id, { from: alice });
         } 
-        // required signatures = 3, signers count = 3, next request id = 2
-
-        // reduce count of required signatures to prevent exceeding it over signers count
-        await this.instance.decreaseRequiredSignatures({ from: alice });
-        // get all required signatures
-        await this.instance.sign(2, { from: alice });
-        for (let id = 0; id < 2; id++) {
-            await this.instance.sign(2, { from: rest[id] });
-        }
-        await this.instance.execute(2, { from: alice });
-        // required signatures = 2, signers count = 3
+        // required signatures = 1, signers count = 3, next request id = 2
 
         expectEvent(
             await this.instance.increaseRequiredSignatures({ from: alice }),
@@ -206,17 +154,25 @@ contract("MultiSigWallet", async function(accounts) {
         )
     })
 
-    it("should reject INCREASE_REQ_SIGNATURES request creation to prevent exceeding requiredSignatures over signerCount", async function() {
-        expectRevert(
-            this.instance.increaseRequiredSignatures({ from: alice }),
-            "MultiSigWallet: Required signatures cannot exceed signers count"
-        )
-    })
+    it("should create DECREASE_REQ_SIGNATURES request", async function() {
+        // add signer
+        await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") });
+        await this.instance.addSigner(bob, { from: alice });
+        await this.instance.sign(0, { from: alice });
+        await this.instance.execute(0, { from: alice });
 
-    it("should reject create request action from 'non-signer' account", async function() {
-        expectRevert(
-            this.instance.addSigner(rest[0], { from: bob }),
-            "SignedWallet: Caller is not signer"
+        //increment require statements 
+        await this.instance.increaseRequiredSignatures({ from: bob });
+        await this.instance.sign(1, { from: alice });
+        await this.instance.execute(1, { from: alice });
+        // requiredSignatures = 2
+
+        expectEvent(
+            await this.instance.decreaseRequiredSignatures({ from: alice }),
+            "NewRequest",
+            {
+                requestType: new BN(3)
+            }
         )
     })
 
@@ -246,13 +202,128 @@ contract("MultiSigWallet", async function(accounts) {
         )
     })
 
+    it("should add new signer", async function() {
+        await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") });
+        await this.instance.addSigner(bob, { from: alice });
+        await this.instance.sign(0, { from: alice });
+        
+        expectEvent(
+            await this.instance.execute(0, { from: alice }),
+            "NewSigner",
+            {
+                who: bob
+            }
+        );
+    })
+
+    it("should remove signer", async function() {
+        // add signer
+        await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") });
+        await this.instance.addSigner(bob, { from: alice });
+        await this.instance.sign(0, { from: alice });
+        await this.instance.execute(0, { from: alice });
+
+        //remove signer
+        await this.instance.removeSigner(bob, { from: alice });
+        await this.instance.sign(1, { from: alice });
+        expectEvent(
+            await this.instance.execute(1, { from: alice }),
+            "DeleteSigner",
+            {
+                who: bob
+            }
+        )
+    })
+
+    it("should increment required signatures", async function() {
+        // add signer and create request
+        await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") });
+        await this.instance.addSigner(bob, { from: alice });
+        await this.instance.sign(0, { from: alice });
+        await this.instance.execute(0, { from: alice });
+        await this.instance.increaseRequiredSignatures({ from: bob });
+        await this.instance.sign(1, { from: alice });
+        
+        expectEvent(
+            await this.instance.execute(1, { from: bob }),
+            "RequiredSignaturesIncreased",
+            {
+                oldVal: new BN(1),
+                newVal: new BN(2)
+            }
+        )
+        
+    })
+
+    it("should reduce required signatures", async function() {
+        // add signer, increment required signatures and create request
+        await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") });
+        await this.instance.addSigner(bob, { from: alice });
+        for (let id = 0; id < 3; id++) {
+            await this.instance.sign(id, { from: alice });
+            if (id == 2) await this.instance.sign(2, { from: bob }); 
+            if (id < 2)  await this.instance.execute(id, { from: alice });
+            if (id == 0) await this.instance.increaseRequiredSignatures({ from: bob });
+            if (id == 1) await this.instance.decreaseRequiredSignatures({ from: bob });
+        }
+        
+        expectEvent(
+            await this.instance.execute(2, { from: bob }),
+            "RequiredSignaturesDecreased",
+            {
+                oldVal: new BN(2),
+                newVal: new BN(1)
+            }
+        )
+    })
+
+    it("should revoke request transaction", async function() {
+        
+    })
+
+    it("should reject INCREASE_REQ_SIGNATURES request creation to prevent exceeding requiredSignatures over signerCount", async function() {
+        await expectRevert(
+            this.instance.increaseRequiredSignatures({ from: alice }),
+            "MultiSigWallet: Required signatures cannot exceed signers count"
+        )
+    })
+
+    it("should reject DECREASE_REQ_SIGNATURES request creation to avoid requiredSignatures = 0", async function() {
+        await expectRevert(
+            this.instance.decreaseRequiredSignatures({ from: alice }),
+            "MultiSigWallet: Required signatures cannot be 0."
+        )
+    })
+
     it("should reject unsigned request execution", async function() {
         await this.instance.deposit({ from: bob, value: web3.utils.toWei("1") }); // add signer requirement
         await this.instance.addSigner(bob, { from: alice });
 
-        expectRevert(
+        await expectRevert(
             this.instance.execute(0, { from: alice }),
             "MultiSigWallet: Called request is not fully signed yet."
+        )
+    })
+
+    it("should reject create request action from 'non-signer' account", async function() {
+        await expectRevert(
+            this.instance.addSigner(rest[0], { from: bob }),
+            "SignedWallet: Caller is not signer"
+        )
+    })
+
+    it("should reject withdraw() for not owner account", async function() {
+        const amount = new BN(web3.utils.toWei("1"));
+        await expectRevert(
+            this.instance.withdraw(amount, { from: bob }),
+            "MultiSigWallet: Callers balance is insufficient"
+        )
+    })
+
+    it("should reject withdrawAll() for not owner account", async function() {
+        await expectRevert(
+            this.instance.withdrawAll({ from: bob }),
+            "Wallet: Specified address has no balance"
         )
     })
 
