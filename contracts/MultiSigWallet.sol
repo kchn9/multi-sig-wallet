@@ -28,12 +28,19 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         }
         else if (requestType == RequestType.INCREASE_REQ_SIGNATURES) {
             _increaseRequiredSignatures();
+            _requests[_idx].isExecuted = true;
         }
         else if (requestType == RequestType.DECREASE_REQ_SIGNATURES) {
             _decreaseRequiredSignatures();
+            _requests[_idx].isExecuted = true;
         }
         else if (requestType == RequestType.SEND_TRANSACTION){
-            //todo
+            (address payable to, uint256 value, bytes memory txData) = abi.decode(data, (address, uint256, bytes));
+            (bool success, /*data*/) = to.call{ value: value }(txData);
+            if (success) {
+                _requests[_idx].isExecuted = true;
+            }
+            require(success, "MultiSigWallet: Ether transfer failed");
         }
         else {
             revert("MultiSigWallet: Specified request type does not exist.");
@@ -64,6 +71,15 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
     function decreaseRequiredSignatures() external onlySigner {
         require(_requiredSignatures - 1 > 0, "MultiSigWallet: Required signatures cannot be 0.");
         _createDecrementReqSignaturesRequest(uint64(_requiredSignatures));
+    }
+
+    function sendTransaction(
+        address payable _to, 
+        uint256 _value, 
+        bytes memory _data
+    ) external onlySigner {
+        require(_to != address(0), "MultiSigWallet: Cannot send transaction to address 0.");
+        _createSendTransactionRequest(uint64(_requiredSignatures), _to, _value, _data);
     }
 
     function deposit() public override payable {
