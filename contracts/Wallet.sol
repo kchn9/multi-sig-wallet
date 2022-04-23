@@ -15,7 +15,7 @@ contract Wallet {
 
     /// @notice Checks if specified user has
     modifier hasBalance(address _who) {
-        require(_balances[_who] > 0, "Wallet: Caller has no balance");
+        require(_balances[_who] > 0, "Wallet: Specified address has no balance");
         _;
     }
     
