@@ -129,7 +129,7 @@ contract RequestFactory {
 
     function _createSendTransactionRequest(
         uint64 _requiredSignatures,
-        address payable _to,
+        address _to,
         uint256 _value,
         bytes memory _data
     ) internal {
@@ -138,7 +138,7 @@ contract RequestFactory {
             _requiredSignatures,
             0,
             RequestType.SEND_TRANSACTION,
-            abi.encodePacked(_to, _value, _data),
+            abi.encode(_to, _value, _data),
             false
         );
         _requests.push(sendTransactionRequest);
