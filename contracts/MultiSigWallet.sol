@@ -10,6 +10,7 @@ import { RequestFactory } from "./RequestFactory.sol";
 contract MultiSigWallet is SignedWallet, RequestFactory {
 
     function execute(uint128 _idx) external checkOutOfBounds(_idx) notExecuted(_idx) {
+                        // todo emitEvents
         require(_requests[_idx].requiredSignatures <= _requests[_idx].currentSignatures, 
             "MultiSigWallet: Called request is not fully signed yet.");
         (/*idx*/,
@@ -37,9 +38,7 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         else if (requestType == RequestType.SEND_TRANSACTION){
             (address to, uint256 value, bytes memory txData) = abi.decode(data, (address, uint256, bytes));
             (bool success, /*data*/) = to.call{ value: value }(txData);
-            if (success) {
-                _requests[_idx].isExecuted = true;
-            }
+            _requests[_idx].isExecuted = true;
             require(success, "MultiSigWallet: Ether transfer failed");
         }
         else {
@@ -73,6 +72,13 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         _createDecrementReqSignaturesRequest(uint64(_requiredSignatures));
     }
 
+    function internalTransfer(uint256 _value, address _to) external {
+        require(_value <= getBalance(), "MultiSigWallet: Callers balance is insufficient");
+        _balances[msg.sender] -= _value;
+        _balances[_to] += _value;
+        // todo emitEvent
+    }
+
     function sendTransaction(
         address _to, 
         uint256 _value, 
@@ -92,18 +98,20 @@ contract MultiSigWallet is SignedWallet, RequestFactory {
         deposit();
     }
     
-    function withdraw(uint256 _amount) external override hasBalance(msg.sender) {
+    function withdraw(uint256 _amount) external override {
         require(_amount <= getBalance(), "MultiSigWallet: Callers balance is insufficient");
         _balances[msg.sender] -= _amount;
         emit FundsWithdraw(msg.sender, _amount);
-        payable(msg.sender).transfer(_amount);
+        (bool success, /*data*/) = address(msg.sender).call{ value: _amount}("");
+        require(success, "MultiSigWallet: Ether transfer failed");
     }
 
     function withdrawAll() external override hasBalance(msg.sender) {
         uint256 amount = getBalance();
         _balances[msg.sender] = 0;
         emit FundsWithdraw(msg.sender, amount);
-        payable(msg.sender).transfer(amount);
+        (bool success, /*data*/) = address(msg.sender).call{ value: amount}("");
+        require(success, "MultiSigWallet: Ether transfer failed");
     }
 
     function getBalance() public override view returns(uint256) {
