@@ -129,8 +129,8 @@ contract RequestFactory {
 
     function _createSendTransactionRequest(
         uint64 _requiredSignatures,
+        address payable _to,
         uint256 _value,
-        address _to,
         bytes memory _data
     ) internal {
         Request memory sendTransactionRequest = Request(
