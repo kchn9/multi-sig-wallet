@@ -9,6 +9,7 @@ pragma solidity ^0.8.0;
  */
 contract RequestFactory {
 
+    /// @notice Emitted whenever new request is created.
     event NewRequest(uint128 indexed idx, uint64 requiredSignatures, RequestType requestType, bytes data);
 
     /// @notice Requests are defined here
@@ -45,8 +46,8 @@ contract RequestFactory {
 
     /**
      * @notice Creates ADD_SIGNER request
-     * @param _who address of new signer
      * @param _requiredSignatures amount of signatures required to execute request
+     * @param _who address of new signer
      */
     function _createAddSignerRequest(
         uint64 _requiredSignatures,
@@ -67,8 +68,8 @@ contract RequestFactory {
 
     /**
      * @notice Creates REMOVE_SIGNER request
-     * @param _who address of signer to remove
      * @param _requiredSignatures amount of signatures required to execute request
+     * @param _who address of signer to remove
      */
     function _createRemoveSignerRequest(
         uint64 _requiredSignatures,
@@ -127,6 +128,12 @@ contract RequestFactory {
         _requestIdx++;
     }
 
+    /**
+     * @notice Creates SEND_TRANSACTION request
+     * @param _requiredSignatures amount of signatures required to execute request
+     * @param _to address of transaction receiver
+     * @param _data transaction data [i.e. to call receiver contract function]
+     */
     function _createSendTransactionRequest(
         uint64 _requiredSignatures,
         address _to,
@@ -146,6 +153,7 @@ contract RequestFactory {
         _requestIdx++;
     }
 
+    /// @notice default getter for request of specified request id
     function _getRequest(
         uint128 _idx
     ) internal view returns (
