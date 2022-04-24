@@ -18,6 +18,9 @@ contract SignedWallet is Wallet {
     event DeleteSigner(address who);
 
     /**
+     * @notice Emitted whenever signers decide to change amount of required signatures
+     * @param oldVal old _requiredSignatures value
+     * @param newVal new _requiredSignatures value
      */
     event RequiredSignaturesIncreased(uint oldVal, uint newVal);
     event RequiredSignaturesDecreased(uint oldVal, uint newVal);
