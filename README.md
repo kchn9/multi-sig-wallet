@@ -1,11 +1,14 @@
 
 # Ethereum Multi-Signature Wallet w/requests
 
+![](https://github.com/Developer-DAO/ukraine-donation-nft/actions/workflows/continuous-integration.yaml/badge.svg)
+
 This project is implementation of ethereum wallet that gives users opportunity to better control their shared funds by specific **signer** role.
 It prevents from problem where one of users of shared wallet is running off with all funds.
 
 Every vital change to wallet state (balance, change signer role, change required amount of signatures) is represented by **request** that before being executed must be signed by required amount of signatues.
 
+Contracts are fully covered by unit-tests.
 
 ## Features
 
